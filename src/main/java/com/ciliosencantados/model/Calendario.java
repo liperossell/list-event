@@ -1,7 +1,6 @@
 package com.ciliosencantados.model;
 
 import com.ciliosencantados.bean.CalendarFactory;
-import com.ciliosencantados.exception.BusinessException;
 import com.ciliosencantados.util.DateTimeUtil;
 import com.google.api.client.util.DateTime;
 import com.google.api.services.calendar.Calendar;
@@ -10,7 +9,6 @@ import com.google.api.services.calendar.model.EventDateTime;
 import com.google.api.services.calendar.model.Events;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.List;
 
 public class Calendario {
@@ -19,7 +17,7 @@ public class Calendario {
     private DateTime dateTime;
 
     public Calendario() {
-        this.service = CalendarFactory.INSTANCE();
+        this.service = CalendarFactory.CALENDAR;
     }
 
     public List<Event> listarEventos() throws IOException {
@@ -44,14 +42,6 @@ public class Calendario {
 
     private Calendar.Events getEvents() {
         return this.service.events();
-    }
-
-    public String salvarEvento() throws IOException, BusinessException {
-        if (existEvent()) {
-            throw new BusinessException("Já existe um evento nesse horário");
-        }
-        Event event = createEvent();
-        return String.format("Event created: %s\n", event.getHtmlLink());
     }
 
     private boolean existEvent() throws IOException {

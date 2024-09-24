@@ -16,16 +16,16 @@ import static java.util.Objects.nonNull;
 @Path("/")
 public class EventController {
     @GET
-    public List<Event> list(@QueryParam("dateTime") DateTime dateTime) throws IOException {
+    public List<Event> list(@QueryParam("dateTime") DateTime dateTimeQueryParam) throws IOException {
         ZonedDateTime zdt = ZonedDateTime.now();
-        DateTime dateTime1 = new DateTime(zdt.toEpochSecond() * 1000L);
+        DateTime dateTime = new DateTime(zdt.toEpochSecond() * 1000L);
 
-        if (nonNull(dateTime)) {
-            dateTime1 = dateTime;
+        if (nonNull(dateTimeQueryParam)) {
+            dateTime = dateTimeQueryParam;
         }
 
         Calendario calendario = new Calendario();
-        calendario.setDateTime(dateTime1);
+        calendario.setDateTime(dateTime);
         return calendario.listarEventos();
     }
 }
