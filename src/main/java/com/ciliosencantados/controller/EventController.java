@@ -15,6 +15,7 @@ import static java.util.Objects.nonNull;
 
 @Path("/")
 public class EventController {
+
     @GET
     public List<Event> list(@QueryParam("dateTime") DateTime dateTimeQueryParam) throws IOException {
         ZonedDateTime zdt = ZonedDateTime.now();

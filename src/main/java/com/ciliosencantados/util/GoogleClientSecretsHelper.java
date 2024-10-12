@@ -27,7 +27,7 @@ public final class GoogleClientSecretsHelper {
 
             GoogleClientSecrets googleClientSecrets = GoogleClientSecrets.load(JSON_FACTORY, new InputStreamReader(file));
             googleClientSecrets.getDetails().setClientId(System.getenv("OAUTH_CLIENT_ID"));
-            googleClientSecrets.getDetails().setClientId(System.getenv("OAUTH_CLIENT_SECRET"));
+            googleClientSecrets.getDetails().setClientSecret(System.getenv("OAUTH_CLIENT_SECRET"));
 
             return googleClientSecrets;
         } catch (IOException e) {
