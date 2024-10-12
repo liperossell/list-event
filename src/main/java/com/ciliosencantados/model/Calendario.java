@@ -5,7 +5,6 @@ import com.ciliosencantados.util.DateTimeUtil;
 import com.google.api.client.util.DateTime;
 import com.google.api.services.calendar.Calendar;
 import com.google.api.services.calendar.model.Event;
-import com.google.api.services.calendar.model.EventDateTime;
 import com.google.api.services.calendar.model.Events;
 
 import java.io.IOException;
@@ -13,6 +12,7 @@ import java.util.List;
 
 public class Calendario {
     public static final String CALENDAR_ID = "primary";
+    public static final String GREEN_COLOR_ID = "10";
     private final Calendar service;
     private DateTime dateTime;
 
@@ -21,7 +21,7 @@ public class Calendario {
     }
 
     public List<Event> listarEventos() throws IOException {
-        return getEventsOfTheDay().getItems();
+        return getEventsOfTheDay().getItems().stream().filter(it -> GREEN_COLOR_ID.equals(it.getColorId())).toList();
     }
 
     private Events getEventsOfTheDay() throws IOException {
@@ -44,28 +44,6 @@ public class Calendario {
         return this.service.events();
     }
 
-    private boolean existEvent() throws IOException {
-        return getEventsOfTheDay().getItems().stream().anyMatch(it -> this.dateTime.getValue() >= it.getStart().getDateTime().getValue() && this.dateTime.getValue() <= it.getEnd().getDateTime().getValue());
-    }
-
-    private Event createEvent() throws IOException {
-        Event event = new Event().setSummary("Novo agendamento").setLocation("Rua Doralice Ramos Pinho, 664. Jardim Cidade Florianópolis, São José-SC").setDescription("Isso é um teste");
-        EventDateTime start = getStartEventDateTime();
-        EventDateTime end = getEndEventDateTime();
-        event.setStart(start);
-        event.setEnd(end);
-        getEvents().insert(CALENDAR_ID, event).execute();
-
-        return event;
-    }
-
-    private EventDateTime getEndEventDateTime() {
-        return new EventDateTime().setDateTime(DateTimeUtil.addHours(dateTime, 2)).setTimeZone("America/Sao_Paulo");
-    }
-
-    private EventDateTime getStartEventDateTime() {
-        return new EventDateTime().setDateTime(dateTime).setTimeZone("America/Sao_Paulo");
-    }
     public void setDateTime(DateTime dateTime) {
         this.dateTime = dateTime;
     }
