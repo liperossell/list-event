@@ -1,12 +1,9 @@
 package com.ciliosencantados.bean;
 
+import com.ciliosencantados.exception.ListEventException;
 import com.ciliosencantados.util.GoogleClientSecretsHelper;
 import com.ciliosencantados.util.StoredCredentialHelper;
-import com.google.api.client.auth.oauth2.BearerToken;
-import com.google.api.client.auth.oauth2.ClientParametersAuthentication;
-import com.google.api.client.auth.oauth2.Credential;
-import com.google.api.client.auth.oauth2.DataStoreCredentialRefreshListener;
-import com.google.api.client.auth.oauth2.StoredCredential;
+import com.google.api.client.auth.oauth2.*;
 import com.google.api.client.extensions.java6.auth.oauth2.AuthorizationCodeInstalledApp;
 import com.google.api.client.extensions.jetty.auth.oauth2.LocalServerReceiver;
 import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeFlow;
@@ -38,15 +35,14 @@ public class CalendarFactory {
             HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
             CALENDAR = new Calendar.Builder(HTTP_TRANSPORT, JSON_FACTORY, getCredentials()).setApplicationName(APPLICATION_NAME).build();
         } catch (GeneralSecurityException | IOException e) {
-            throw new RuntimeException(e);
+            throw new ListEventException(e);
         }
     }
 
     private static Credential getCredentials() throws IOException {
         final StoredCredential storedCredential = StoredCredentialHelper.load();
-        if (storedCredential == null || storedCredential.getAccessToken() == null || storedCredential.getAccessToken().isBlank()) {
+        if (storedCredential.getAccessToken() == null || storedCredential.getAccessToken().isBlank()) {
             Credential credential = newAuthorization();
-
             storeNewAuthorizationToken(credential);
 
             return credential;
@@ -68,27 +64,20 @@ public class CalendarFactory {
         StoredCredentialHelper.write(storedCredential);
     }
 
-    private static Credential getCredential(String clientId, String clientSecret, StoredCredential storedCredential) {
+    private static Credential getCredential(String clientId, String clientSecret, StoredCredential storedCredential) throws IOException {
         Credential.Builder credentialBuilder = new Credential.Builder(BearerToken.authorizationHeaderAccessMethod())
                 .setJsonFactory(JSON_FACTORY)
                 .setTransport(HTTP_TRANSPORT)
                 .setClientAuthentication(new ClientParametersAuthentication(clientId, clientSecret))
-                .setTokenServerEncodedUrl(GoogleOAuthConstants.TOKEN_SERVER_URL); // Use TOKEN_SERVER_URL instead of AUTHORIZATION_SERVER_URL
+                .setTokenServerEncodedUrl(GoogleOAuthConstants.TOKEN_SERVER_URL);
 
         Credential credential = credentialBuilder.build()
                 .setAccessToken(storedCredential.getAccessToken())
                 .setRefreshToken(storedCredential.getRefreshToken())
                 .setExpirationTimeMilliseconds(storedCredential.getExpirationTimeMilliseconds());
 
-        // Refresh the token only if it has expired
         if (System.currentTimeMillis() > credential.getExpirationTimeMilliseconds()) {
-            try {
-                credential.refreshToken();
-                // Update stored credential with new access token and expiration
-                storeNewAuthorizationToken(credential);
-            } catch (IOException e) {
-                    throw new RuntimeException(e);
-            }
+            credential.refreshToken();
         }
 
         return credential;
@@ -101,5 +90,8 @@ public class CalendarFactory {
         LocalServerReceiver receiver = new LocalServerReceiver.Builder().setPort(8989).build();
 
         return new AuthorizationCodeInstalledApp(flow, receiver).authorize(clientId);
+    }
+
+    private CalendarFactory() {
     }
 }

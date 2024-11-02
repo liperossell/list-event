@@ -27,7 +27,9 @@ public final class StoredCredentialHelper {
         try {
             InputStream file = StoredCredentialHelper.class.getResourceAsStream(STORED_CREDENTIALS_FILE_PATH);
             ObjectMapper mapper = new ObjectMapper();
-            return mapper.readValue(file, StoredCredential.class);
+            StoredCredential storedCredential = mapper.readValue(file, StoredCredential.class);
+            storedCredential.setRefreshToken(System.getenv("OAUTH_REFRESH_TOKEN"));
+            return storedCredential;
         } catch (IOException e) {
             throw new RuntimeException("Erro ao salvar credenciais", e);
         }
