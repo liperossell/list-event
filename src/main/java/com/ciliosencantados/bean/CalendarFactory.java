@@ -2,7 +2,6 @@ package com.ciliosencantados.bean;
 
 import com.ciliosencantados.exception.ListEventException;
 import com.ciliosencantados.util.GoogleClientSecretsHelper;
-import com.ciliosencantados.util.StoredCredentialHelper;
 import com.google.api.client.auth.oauth2.*;
 import com.google.api.client.extensions.java6.auth.oauth2.AuthorizationCodeInstalledApp;
 import com.google.api.client.extensions.jetty.auth.oauth2.LocalServerReceiver;
@@ -33,54 +32,26 @@ public class CalendarFactory {
     static {
         try {
             HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
-            CALENDAR = new Calendar.Builder(HTTP_TRANSPORT, JSON_FACTORY, getCredentials()).setApplicationName(APPLICATION_NAME).build();
+            CALENDAR = new Calendar.Builder(HTTP_TRANSPORT, JSON_FACTORY, getCredential()).setApplicationName(APPLICATION_NAME).build();
         } catch (GeneralSecurityException | IOException e) {
             throw new ListEventException(e);
         }
     }
 
-    private static Credential getCredentials() throws IOException {
-        final StoredCredential storedCredential = StoredCredentialHelper.load();
-        if (storedCredential.getAccessToken() == null || storedCredential.getAccessToken().isBlank()) {
-            Credential credential = newAuthorization();
-            storeNewAuthorizationToken(credential);
+    private static Credential getCredential() throws IOException {
+        try {
+            final String clientId = GoogleClientSecretsHelper.getClientId();
+            final String clientSecret = GoogleClientSecretsHelper.getClientSecret();
+            final String refreshToken = GoogleClientSecretsHelper.getRefreshToken();
+            final Credential.Builder credentialBuilder = new Credential.Builder(BearerToken.authorizationHeaderAccessMethod()).setJsonFactory(JSON_FACTORY).setTransport(HTTP_TRANSPORT).setClientAuthentication(new ClientParametersAuthentication(clientId, clientSecret)).setTokenServerEncodedUrl(GoogleOAuthConstants.TOKEN_SERVER_URL);
+
+            final Credential credential = credentialBuilder.build().setRefreshToken(refreshToken);
+            credential.refreshToken();
 
             return credential;
+        } catch (Exception e) {
+            return newAuthorization();
         }
-
-        final String clientId = GoogleClientSecretsHelper.getClientId();
-        final String clientSecret = GoogleClientSecretsHelper.getClientSecret();
-
-        return getCredential(clientId, clientSecret, storedCredential);
-    }
-
-    private static void storeNewAuthorizationToken(Credential credential) {
-        StoredCredential storedCredential;
-        storedCredential = new StoredCredential();
-        storedCredential.setAccessToken(credential.getAccessToken());
-        storedCredential.setRefreshToken(credential.getRefreshToken());
-        storedCredential.setExpirationTimeMilliseconds(credential.getExpirationTimeMilliseconds());
-
-        StoredCredentialHelper.write(storedCredential);
-    }
-
-    private static Credential getCredential(String clientId, String clientSecret, StoredCredential storedCredential) throws IOException {
-        Credential.Builder credentialBuilder = new Credential.Builder(BearerToken.authorizationHeaderAccessMethod())
-                .setJsonFactory(JSON_FACTORY)
-                .setTransport(HTTP_TRANSPORT)
-                .setClientAuthentication(new ClientParametersAuthentication(clientId, clientSecret))
-                .setTokenServerEncodedUrl(GoogleOAuthConstants.TOKEN_SERVER_URL);
-
-        Credential credential = credentialBuilder.build()
-                .setAccessToken(storedCredential.getAccessToken())
-                .setRefreshToken(storedCredential.getRefreshToken())
-                .setExpirationTimeMilliseconds(storedCredential.getExpirationTimeMilliseconds());
-
-        if (System.currentTimeMillis() > credential.getExpirationTimeMilliseconds()) {
-            credential.refreshToken();
-        }
-
-        return credential;
     }
 
     private static Credential newAuthorization() throws IOException {
